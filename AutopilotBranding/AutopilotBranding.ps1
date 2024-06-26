@@ -35,7 +35,7 @@ Log "Install folder: $installFolder"
 Log "Loading configuration: $($installFolder)Config.xml"
 [Xml]$config = Get-Content "$($installFolder)Config.xml"
 
-# STEP 1: Apply custom start menu layout
+<# STEP 1: Apply custom start menu layout
 $ci = Get-ComputerInfo
 if ($ci.OsBuildNumber -le 22000) {
 	Log "Importing layout: $($installFolder)Layout.xml"
@@ -76,7 +76,7 @@ else {
 	Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}" -Name "SensorPermissionState" -Type "DWord" -Value 1 -Force
 	Start-Service -Name "lfsvc" -ErrorAction SilentlyContinue
 }
-
+#>
 # STEP 4: Remove specified provisioned apps if they exist
 Log "Removing specified in-box provisioned apps"
 $apps = Get-AppxProvisionedPackage -online
@@ -106,7 +106,7 @@ if ($config.Config.OneDriveSetup) {
 Log "Turning off (old) Edge desktop shortcut"
 reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v DisableEdgeDesktopShortcutCreation /t REG_DWORD /d 1 /f /reg:64 | Out-Host
 
-# STEP 7: Add language packs
+<# STEP 7: Add language packs
 Get-ChildItem "$($installFolder)LPs" -Filter *.cab | % {
 	Log "Adding language pack: $($_.FullName)"
 	Add-WindowsPackage -Online -NoRestart -PackagePath $_.FullName
@@ -117,15 +117,16 @@ if ($config.Config.Language) {
 	Log "Configuring language using: $($config.Config.Language)"
 	& $env:SystemRoot\System32\control.exe "intl.cpl,,/f:`"$($installFolder)$($config.Config.Language)`""
 }
-
+#>
 # STEP 9: Add features on demand
 $currentWU = (Get-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU" -ErrorAction Ignore).UseWuServer
-if ($currentWU -eq 1)
+<#if ($currentWU -eq 1)
 {
 	Log "Turning off WSUS"
 	Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU"  -Name "UseWuServer" -Value 0
 	Restart-Service wuauserv
 }
+#>
 if ($config.Config.AddFeatures.Feature.Count -gt 0)
 {
 	$config.Config.AddFeatures.Feature | % {
@@ -133,7 +134,7 @@ if ($config.Config.AddFeatures.Feature.Count -gt 0)
 		Add-WindowsCapability -Online -Name $_ -ErrorAction SilentlyContinue | Out-Null
 	}
 }
-if ($currentWU -eq 1)
+<#if ($currentWU -eq 1)
 {
 	Log "Turning on WSUS"
 	Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU"  -Name "UseWuServer" -Value 1
@@ -164,7 +165,7 @@ if ($config.Config.OEMInfo)
 	Copy-Item "$installFolder\$($config.Config.OEMInfo.Logo)" "C:\Windows\$($config.Config.OEMInfo.Logo)" -Force
 	reg.exe add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\OEMInformation" /v Logo /t REG_SZ /d "C:\Windows\$($config.Config.OEMInfo.Logo)" /f /reg:64 | Out-Host
 }
-
+#>
 # STEP 13: Enable UE-V
 Log "Enabling UE-V"
 Enable-UEV
